@@ -6,6 +6,17 @@ BLEND_MODES = {"blend": (lambda img1, img2: Image.blend(img1, img2, 0.6)), "dark
 SORT_FIELDS = {"hue": 0, "saturation": 1, "value": 2}
 
 
+def channel_shift(src_img, change_percent=-0.1, mode="none", channel=0):
+    image = src_img.convert("RGB")
+    change_x = change_percent*image.width
+    channels = list(image.split())
+    channels[channel] = channels[channel].rotate(0, translate=(change_x, 0))
+    result = Image.merge(mode="RGB", bands=channels)
+
+    blended_img = BLEND_MODES[mode](image, result)
+    return blended_img
+
+
 def pixel_sort(src_img, mode="none", sort_field="hue", skip_interval=0):
     image = src_img.convert(mode="HSV")
     image_array = np.array(image)
@@ -29,5 +40,9 @@ def pixel_sort(src_img, mode="none", sort_field="hue", skip_interval=0):
 
 
 source = Image.open("testimage2.jpg")
+
+image = channel_shift(source)
+image.show()
+
 image = pixel_sort(source)
 image.show()
