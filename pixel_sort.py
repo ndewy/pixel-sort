@@ -103,7 +103,7 @@ def pixel_sort(src_img, mode="none", sort_field="hue", skip_interval=0):
     return blended_img
 
 
-source = Image.open("testimage2.jpg")
+source = Image.open("examples/portrait1.jpg")
 
 __cv_to_pil(cv_threshold(__pil_to_cv(source))).show()
 get_largest_foreground_region(source).show()
