@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from PIL import Image, ImageChops
+from PIL import Image, ImageChops, ImageOps
 
 BLEND_MODES = {"blend": (lambda img1, img2: Image.blend(img1, img2, 0.6)), "darker": ImageChops.darker,
                "lighter": ImageChops.lighter, "none": (lambda img1, img2: img2), "multiply": ImageChops.multiply, "overlay": ImageChops.overlay, "hardlight": ImageChops.hard_light}
@@ -82,34 +82,65 @@ def channel_shift(src_img, change_percent=-0.1, mode="none", channel=0):
 
 
 def pixel_sort(src_img, mode="none", sort_field="hue", skip_interval=0):
-    image = src_img.convert(mode="HSV")
-    image_array = np.array(image)
-    results = []
+    alpha_channel = src_img.convert("RGBA").getchannel("A")
+    img = src_img.convert(mode="HSV")
+    img_array = np.array(img)
+    alpha_array = np.array(alpha_channel)
+    result_array = []
     sort_key = SORT_FIELDS[sort_field]
 
-    for i in range(image.height):
-        if (skip_interval == 0) or not i % skip_interval == 0:
-            sorted_row = sorted(image_array[i], key=lambda pix: pix[sort_key])
-            results.append(sorted_row)
-            print("row {} out of {}".format(i, image.height))
+    for i in range(src_img.height):
+
+        start_pixel = 0
+        startpixel_modified = False
+        end_pixel = src_img.width + 1
+
+        for j in range(src_img.width):
+            # Start from the first non-transparent pixel
+            if not startpixel_modified and alpha_array[i][j] != 0:
+                start_pixel = j
+                startpixel_modified = True
+            # End at the last non-transparent pixel
+            if alpha_array[i][j] != 0:
+                end_pixel = j
+
+        row_values = []
+        if ((skip_interval == 0) or not i % skip_interval == 0) and startpixel_modified:
+            row_values += [img_array[i][j] for j in range(0, start_pixel)]
+            sorted_row = sorted(
+                img_array[i][start_pixel:end_pixel], key=lambda pix: pix[sort_key])
+            row_values += sorted_row
+            row_values += [img_array[i][j] for j in range(end_pixel, src_img.width)]
+
+            result_array.append(row_values)
+            print("row {} out of {}".format(i, src_img.height))
+            assert len(row_values) == src_img.width, "Row length not consistent"
             continue
+
         # Skipped row
-        results.append(image_array[i])
-        print("row {} out of {} skipped".format(i, image.height))
+        result_array.append(img_array[i])
+        print("row {} out of {} skipped".format(i, src_img.height))
 
-    result = Image.fromarray(np.array(results), mode="HSV").convert("RGB")
-
+    result = Image.fromarray(np.array(result_array), mode="HSV").convert("RGBA")
     blended_img = BLEND_MODES[mode](src_img, result)
     return blended_img
 
 
 source = Image.open("examples/portrait1.jpg")
 
-__cv_to_pil(cv_threshold(__pil_to_cv(source))).show()
-get_largest_foreground_region(source).show()
+# __cv_to_pil(cv_threshold(__pil_to_cv(source))).show()
+# get_largest_foreground_region(source).show()
 
-image = channel_shift(source)
-image.show()
+# === CHANNEL SHIFT ALL
+# image = channel_shift(source)
+# image.show()
 
-image = pixel_sort(source)
+# === PIXEL SORT ALL ===
+# image = pixel_sort(source)
+# image.show()
+
+# === PIXEL SORT FACE ONLY ===
+masked_image = get_largest_foreground_region(source)
+masked_image.show()
+image = pixel_sort(masked_image,sort_field="value")
 image.show()
