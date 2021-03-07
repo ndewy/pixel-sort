@@ -81,7 +81,7 @@ def channel_shift(src_img, change_percent=-0.1, mode="none", channel=0):
     return blended_img
 
 
-def pixel_sort(src_img, mode="none", sort_field="hue", skip_interval=0):
+def pixel_sort(src_img, mode="none", sort_field="hue", skip_interval=0, flipped=False):
     alpha_channel = src_img.convert("RGBA").getchannel("A")
     img = src_img.convert(mode="HSV")
     img_array = np.array(img)
@@ -108,9 +108,10 @@ def pixel_sort(src_img, mode="none", sort_field="hue", skip_interval=0):
         if ((skip_interval == 0) or not i % skip_interval == 0) and startpixel_modified:
             row_values += [img_array[i][j] for j in range(0, start_pixel)]
             sorted_row = sorted(
-                img_array[i][start_pixel:end_pixel], key=lambda pix: pix[sort_key])
+                img_array[i][start_pixel:end_pixel], key=lambda pix: pix[sort_key], reverse=flipped)
             row_values += sorted_row
-            row_values += [img_array[i][j] for j in range(end_pixel, src_img.width)]
+            row_values += [img_array[i][j]
+                           for j in range(end_pixel, src_img.width)]
 
             result_array.append(row_values)
             print("row {} out of {}".format(i, src_img.height))
@@ -121,7 +122,8 @@ def pixel_sort(src_img, mode="none", sort_field="hue", skip_interval=0):
         result_array.append(img_array[i])
         print("row {} out of {} skipped".format(i, src_img.height))
 
-    result = Image.fromarray(np.array(result_array), mode="HSV").convert("RGBA")
+    result = Image.fromarray(np.array(result_array),
+                             mode="HSV").convert("RGBA")
     blended_img = BLEND_MODES[mode](src_img, result)
     return blended_img
 
@@ -142,5 +144,5 @@ source = Image.open("examples/portrait1.jpg")
 # === PIXEL SORT FACE ONLY ===
 masked_image = get_largest_foreground_region(source)
 masked_image.show()
-image = pixel_sort(masked_image,sort_field="value")
+image = pixel_sort(masked_image, sort_field="value")
 image.show()
