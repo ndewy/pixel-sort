@@ -83,7 +83,7 @@ def channel_shift(src_img, change_percent=-0.1, mode="none", channel=0):
     return blended_img
 
 
-def pixel_sort(src_img, mode="none", sort_field="hue", skip_interval=0, flipped=False):
+def pixel_sort(src_img, mode="none", sort_field="hue", skip_percent=0.3, flipped=False):
 
     img = src_img.convert(mode="HSV")
     img_array = np.array(img)
@@ -113,8 +113,17 @@ def pixel_sort(src_img, mode="none", sort_field="hue", skip_interval=0, flipped=
                 end_pixel = j
 
         row_values = []
-        # Only pixelsort if this is a skip row AND we have found any non-transparent pixels.
-        if ((skip_interval == 0) or not i % skip_interval == 0) and startpixel_modified:
+
+        # Is this row a skip row?
+        is_skip_row = False
+        # Pick a random number between 0 and 1
+        num = random.random()
+        # If number is below the percentage, skip it
+        # As this uses a uniform distribution, we know that, overall, 30% of picks will be below 0.3, and so on.
+        if num <= skip_percent:
+            is_skip_row = True
+
+        if (not is_skip_row) and startpixel_modified:
             # Fill the region up to the startpoint with the original pixels.
             row_values += [img_array[i][j] for j in range(0, start_pixel)]
 
