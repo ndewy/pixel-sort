@@ -4,7 +4,8 @@ import cv2
 import numpy as np
 from PIL import Image, ImageChops, ImageOps
 
-BLEND_MODES = {"none": (lambda img1, img2: img2), "add": ImageChops.add, "blend": (lambda img1, img2: Image.blend(img1, img2, 0.6)), "darker": ImageChops.darker, "difference": ImageChops.difference, "lighter": ImageChops.lighter, "multiply": ImageChops.multiply, "hardlight": ImageChops.hard_light, "softlight": ImageChops.soft_light, "overlay": ImageChops.overlay, "screen": ImageChops.screen, "subtract": ImageChops.subtract}
+BLEND_MODES = {"none": (lambda img1, img2: img2), "add": ImageChops.add, "blend": (lambda img1, img2: Image.blend(img1, img2, 0.6)), "darker": ImageChops.darker, "difference": ImageChops.difference, "lighter": ImageChops.lighter,
+               "multiply": ImageChops.multiply, "hardlight": ImageChops.hard_light, "softlight": ImageChops.soft_light, "overlay": ImageChops.overlay, "screen": ImageChops.screen, "subtract": ImageChops.subtract}
 SORT_FIELDS = {"hue": 0, "saturation": 1, "value": 2}
 
 
@@ -38,7 +39,7 @@ def cv_threshold(img):
     return threshold
 
 
-def get_largest_foreground_region(img):
+def get_largest_foreground_region(img, threshold_img=None):
     """ Creates an image containing only the largest forground region.
 
         Returns an image with the size of the input. 
@@ -48,12 +49,15 @@ def get_largest_foreground_region(img):
 
         Arguments:
             img: a PIL image.
+            threshold_img: (optional). The image that will be passed to the thresholder. Defaults to img. Useful if
+                                        img is noisy, and a less noisy version is available to threshold with.
 
         Returns: 
             img: an RGBA PIL image.
     """
-
-    opencv_img = __pil_to_cv(img)
+    if threshold_img is None:
+        threshold_img = img
+    opencv_img = __pil_to_cv(threshold_img)
     threshold = cv_threshold(opencv_img)
     contours, hierarchy = cv2.findContours(
         threshold, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -70,7 +74,6 @@ def get_largest_foreground_region(img):
     img.putalpha(mask)
     return img
 
-
 def channel_shift(src_img, change_percent=-0.1, mode="none", channel=0):
     image = src_img.convert("RGB")
     change_x = change_percent*image.width
@@ -82,7 +85,7 @@ def channel_shift(src_img, change_percent=-0.1, mode="none", channel=0):
     return blended_img
 
 
-def pixel_sort(src_img, mode="none", sort_field="hue", skip_percent=0.3, flipped=False):
+def (src_img, mode="none", sort_field="hue", skip_percent=0.3, flipped=False, region_max=0.3, region_min=0.1):
 
     img = src_img.convert(mode="HSV")
     img_array = np.array(img)
@@ -131,7 +134,7 @@ def pixel_sort(src_img, mode="none", sort_field="hue", skip_percent=0.3, flipped
             current_pixel = start_pixel
             while current_pixel < end_pixel:
                 region_length = random.randint(
-                    ceil((end_pixel-start_pixel)*0.1), ceil((end_pixel-start_pixel)*0.3))
+                    ceil((end_pixel-start_pixel)*region_min), ceil((end_pixel-start_pixel)*region_max))
                 region_end = current_pixel + region_length
 
                 if region_end > end_pixel:
