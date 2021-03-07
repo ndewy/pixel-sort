@@ -4,8 +4,7 @@ import cv2
 import numpy as np
 from PIL import Image, ImageChops, ImageOps
 
-BLEND_MODES = {"blend": (lambda img1, img2: Image.blend(img1, img2, 0.6)), "darker": ImageChops.darker,
-               "lighter": ImageChops.lighter, "none": (lambda img1, img2: img2), "multiply": ImageChops.multiply, "overlay": ImageChops.overlay, "hardlight": ImageChops.hard_light}
+BLEND_MODES = {"none": (lambda img1, img2: img2), "add": ImageChops.add, "blend": (lambda img1, img2: Image.blend(img1, img2, 0.6)), "darker": ImageChops.darker, "difference": ImageChops.difference, "lighter": ImageChops.lighter, "multiply": ImageChops.multiply, "hardlight": ImageChops.hard_light, "softlight": ImageChops.soft_light, "overlay": ImageChops.overlay, "screen": ImageChops.screen, "subtract": ImageChops.subtract}
 SORT_FIELDS = {"hue": 0, "saturation": 1, "value": 2}
 
 
@@ -132,7 +131,7 @@ def pixel_sort(src_img, mode="none", sort_field="hue", skip_percent=0.3, flipped
             current_pixel = start_pixel
             while current_pixel < end_pixel:
                 region_length = random.randint(
-                    ceil((end_pixel-start_pixel)*0.2), ceil((end_pixel-start_pixel)*0.6))
+                    ceil((end_pixel-start_pixel)*0.1), ceil((end_pixel-start_pixel)*0.3))
                 region_end = current_pixel + region_length
 
                 if region_end > end_pixel:
