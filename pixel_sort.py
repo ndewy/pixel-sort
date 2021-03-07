@@ -1,3 +1,5 @@
+import random
+from math import ceil
 import cv2
 import numpy as np
 from PIL import Image, ImageChops, ImageOps
@@ -116,10 +118,25 @@ def pixel_sort(src_img, mode="none", sort_field="hue", skip_interval=0, flipped=
             # Fill the region up to the startpoint with the original pixels.
             row_values += [img_array[i][j] for j in range(0, start_pixel)]
 
-            # Sort pixels between start and end pixels.
-            sorted_row = sorted(
-                img_array[i][start_pixel:end_pixel], key=lambda pix: pix[sort_key], reverse=flipped)
-            row_values += sorted_row
+            # Split pixels from start_pixel -> end_pixel into random length regions.
+            regions = []
+            current_pixel = start_pixel
+            while current_pixel < end_pixel:
+                region_length = random.randint(
+                    ceil((end_pixel-start_pixel)*0.2), ceil((end_pixel-start_pixel)*0.6))
+                region_end = current_pixel + region_length
+
+                if region_end > end_pixel:
+                    region_end = end_pixel
+
+                regions.append(img_array[i][current_pixel:region_end])
+                current_pixel = region_end
+
+            # Sort each region and append.
+            for region in regions:
+                sorted_region = sorted(
+                    region, key=lambda pix: pix[sort_key], reverse=flipped)
+                row_values += sorted_region
 
             # Fill in the rest of the row after the endpoint with the original pixels.
             row_values += [img_array[i][j]
@@ -127,7 +144,8 @@ def pixel_sort(src_img, mode="none", sort_field="hue", skip_interval=0, flipped=
 
             result_array.append(row_values)
             print("row {} out of {}".format(i, src_img.height))
-            assert len(row_values) == src_img.width, "Row length not consistent"
+            assert len(
+                row_values) == src_img.width, "Row length not equal to image width"
             continue
 
         # Skipped row - populate the row with it's original pixels.
