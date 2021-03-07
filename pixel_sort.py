@@ -1,8 +1,10 @@
 import random
 from math import ceil
+
 import cv2
 import numpy as np
 from PIL import Image, ImageChops, ImageOps
+from skimage.util import random_noise
 
 BLEND_MODES = {"none": (lambda img1, img2: img2), "add": ImageChops.add, "blend": (lambda img1, img2: Image.blend(img1, img2, 0.6)), "darker": ImageChops.darker, "difference": ImageChops.difference, "lighter": ImageChops.lighter,
                "multiply": ImageChops.multiply, "hardlight": ImageChops.hard_light, "softlight": ImageChops.soft_light, "overlay": ImageChops.overlay, "screen": ImageChops.screen, "subtract": ImageChops.subtract}
@@ -37,6 +39,17 @@ def cv_threshold(img):
     ret, threshold = cv2.threshold(
         blur, 0, 255, cv2.THRESH_BINARY+cv2.THRESH_OTSU)
     return threshold
+
+
+def add_noise(img, amount=0.01, mean=0):
+    # Wraps skimage function with auto conversion to/from PIL.
+    # Mean = overall brightness, Varience = amount of noise
+    sk_img = np.array(img)
+    noise_img = random_noise(sk_img, mode="speckle", var=amount, mean=mean)
+    # Convert -1->1 RGB to 0-> 255 RGB
+    noise_img = (255*noise_img).astype(np.uint8)
+    pil_img = Image.fromarray(noise_img)
+    return pil_img
 
 
 def get_largest_foreground_region(img, threshold_img=None):
@@ -74,6 +87,7 @@ def get_largest_foreground_region(img, threshold_img=None):
     img.putalpha(mask)
     return img
 
+
 def channel_shift(src_img, change_percent=-0.1, mode="none", channel=0):
     image = src_img.convert("RGB")
     change_x = change_percent*image.width
@@ -85,7 +99,7 @@ def channel_shift(src_img, change_percent=-0.1, mode="none", channel=0):
     return blended_img
 
 
-def (src_img, mode="none", sort_field="hue", skip_percent=0.3, flipped=False, region_max=0.3, region_min=0.1):
+def pixel_sort(src_img, mode="none", sort_field="hue", skip_percent=0.3, flipped=False, region_max=0.3, region_min=0.1):
 
     img = src_img.convert(mode="HSV")
     img_array = np.array(img)
