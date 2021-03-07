@@ -128,21 +128,3 @@ def pixel_sort(src_img, mode="none", sort_field="hue", skip_interval=0, flipped=
     return blended_img
 
 
-source = Image.open("examples/portrait1.jpg")
-
-# __cv_to_pil(cv_threshold(__pil_to_cv(source))).show()
-# get_largest_foreground_region(source).show()
-
-# === CHANNEL SHIFT ALL
-# image = channel_shift(source)
-# image.show()
-
-# === PIXEL SORT ALL ===
-# image = pixel_sort(source)
-# image.show()
-
-# === PIXEL SORT FACE ONLY ===
-masked_image = get_largest_foreground_region(source)
-masked_image.show()
-image = pixel_sort(masked_image, sort_field="value")
-image.show()
