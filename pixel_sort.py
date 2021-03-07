@@ -153,6 +153,6 @@ def pixel_sort(src_img, mode="none", sort_field="hue", skip_interval=0, flipped=
         print("row {} out of {} skipped".format(i, src_img.height))
 
     result = Image.fromarray(np.array(result_array),
-                             mode="HSV").convert("RGBA")
-    blended_img = BLEND_MODES[mode](src_img, result)
+                             mode="HSV").convert("RGB")
+    blended_img = BLEND_MODES[mode](src_img.convert("RGB"), result)
     return blended_img
