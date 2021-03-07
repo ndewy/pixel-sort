@@ -82,10 +82,15 @@ def channel_shift(src_img, change_percent=-0.1, mode="none", channel=0):
 
 
 def pixel_sort(src_img, mode="none", sort_field="hue", skip_interval=0, flipped=False):
-    alpha_channel = src_img.convert("RGBA").getchannel("A")
+
     img = src_img.convert(mode="HSV")
     img_array = np.array(img)
+
+    # The alpha channel is used only as a mask to selectively apply pixel sort.
+    # The final image is fully opaque and does use it.
+    alpha_channel = src_img.convert("RGBA").getchannel("A")
     alpha_array = np.array(alpha_channel)
+
     result_array = []
     sort_key = SORT_FIELDS[sort_field]
 
@@ -95,6 +100,7 @@ def pixel_sort(src_img, mode="none", sort_field="hue", skip_interval=0, flipped=
         startpixel_modified = False
         end_pixel = src_img.width + 1
 
+        # Find start and end pixels.
         for j in range(src_img.width):
             # Start from the first non-transparent pixel
             if not startpixel_modified and alpha_array[i][j] != 0:
@@ -105,11 +111,17 @@ def pixel_sort(src_img, mode="none", sort_field="hue", skip_interval=0, flipped=
                 end_pixel = j
 
         row_values = []
+        # Only pixelsort if this is a skip row AND we have found any non-transparent pixels.
         if ((skip_interval == 0) or not i % skip_interval == 0) and startpixel_modified:
+            # Fill the region up to the startpoint with the original pixels.
             row_values += [img_array[i][j] for j in range(0, start_pixel)]
+
+            # Sort pixels between start and end pixels.
             sorted_row = sorted(
                 img_array[i][start_pixel:end_pixel], key=lambda pix: pix[sort_key], reverse=flipped)
             row_values += sorted_row
+
+            # Fill in the rest of the row after the endpoint with the original pixels.
             row_values += [img_array[i][j]
                            for j in range(end_pixel, src_img.width)]
 
@@ -118,7 +130,7 @@ def pixel_sort(src_img, mode="none", sort_field="hue", skip_interval=0, flipped=
             assert len(row_values) == src_img.width, "Row length not consistent"
             continue
 
-        # Skipped row
+        # Skipped row - populate the row with it's original pixels.
         result_array.append(img_array[i])
         print("row {} out of {} skipped".format(i, src_img.height))
 
@@ -126,5 +138,3 @@ def pixel_sort(src_img, mode="none", sort_field="hue", skip_interval=0, flipped=
                              mode="HSV").convert("RGBA")
     blended_img = BLEND_MODES[mode](src_img, result)
     return blended_img
-
-
